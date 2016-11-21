@@ -30,14 +30,13 @@ To do:
 #error("Height incorrect, please fix Adafruit_SSD1306.h!");
 #endif
 
-// If using software SPI (the default case):
-#define OLED_MOSI   9
-#define OLED_CLK   10
-#define OLED_DC    11
-#define OLED_CS    12
-#define OLED_RESET 13
 #define ZEROKPA    512
-Adafruit_SSD1306 display(OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
+
+// Use i2c protocol
+#define OLED_RESET 4
+Adafruit_SSD1306 display(OLED_RESET);
+
+
 
 const unsigned char PROGMEM dog_paw [] = {
 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x78, 0x00, 0x01, 0xE0, 0xFC, 0x00, 0x03, 0xE1, 0xFC, 0x00,
@@ -85,6 +84,8 @@ void setup()   {
   display.setTextSize(1);
   display.setTextColor(WHITE);
   display.println("Calibrating...");
+  display.drawBitmap(90, 20,  dog_paw, 32, 32, 1);
+  display.setCursor(93,50); display.println("v0.1");
   display.display();
   while (millis() < 10000) {
     sum=sum + analogRead(analogPin);
@@ -92,23 +93,23 @@ void setup()   {
   }
   zeroKPa=sum/count;
   if (zeroKPa < ZEROKPA*0.9 || zeroKPa > ZEROKPA*1.1) {  // if "0 kPA" is 10% off, either the MPX sensor is shot or a TB is pulling on it
-  display.clearDisplay();
   display.setCursor(0,10);
-  display.println("Calibration Failed..."); 
+  display.println("Calibrating... Fail"); 
   display.println(); 
-  display.println("Is It Attached?"); 
+  display.println("Drawing vacuum?"); 
+  display.println(); 
+  display.println(":-O"); 
   display.display();
   while (1);  //Ugh - spin until power is pulled.
   }
-  /* else {    
-  display.clearDisplay();
+   else {    
   display.setCursor(0,10);
+  display.println("Calibrating... Done.");
   display.print("Count: "); display.println(count);
-  display.print("ZKPa: "); display.println(zeroKPa);
+  display.print("ZKPa:  "); display.println(zeroKPa);
   display.display();
   delay(10000);
-  } */
-
+  } 
 }
 void loop() {
 
@@ -144,11 +145,11 @@ void frame(void) {
 
 void bar(int pressure) {
   int pos = 0;
-  pos = map(pressure, 0, 1023, 0, display.width());
+  pos = map(pressure, 0, 2*zeroKPa, 0, display.width());
   display.drawFastVLine(display.width()-pos,0,16,WHITE);
 }
 
-void text(int kPa) {
+void text(float kPa) {
    char cylinder = 'L';
 // print results in text
     if (kPa < 0) cylinder = 'R'; else cylinder = 'L';
